@@ -9,7 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import toast, { Toaster } from 'react-hot-toast';
 
-const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
+const BASE_URL = 'https://docucare-2jro.onrender.com'; // Define the base URL as a variable
 
 function Appointments() {
   const [appointments, setAppointments] = useState([]); // Ensure initial state is an array

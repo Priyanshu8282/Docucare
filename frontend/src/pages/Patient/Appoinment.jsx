@@ -11,7 +11,7 @@ function Appointment() {
     reason: '',
   });
   const [doctors, setDoctors] = useState([]);
-  const BASE_URL = 'http://localhost:3000';
+  const BASE_URL = 'https://docucare-2jro.onrender.com';
 
   // Fetch appointments and doctor names on component mount
   useEffect(() => {

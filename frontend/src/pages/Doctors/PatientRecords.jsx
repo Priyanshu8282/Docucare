@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
-const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
+const BASE_URL = 'https://docucare-2jro.onrender.com'; // Define the base URL as a variable
 
 function PatientRecords() {
   const [patients, setPatients] = useState([]);
