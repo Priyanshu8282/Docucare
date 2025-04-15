@@ -9,28 +9,29 @@ import billingRouter from './routes/Patient/billingRoutes.js';
 import adminRouter from './routes/Admin/adminRoute.js';
 import appointmentRouter from './routes/Patient/appointmentRoute.js';
 import messageRouter from './routes/Admin/messageRoute.js';
-import bodyParser from "body-parser";
 
 
-const app = express();
+
 dotenv.config();
+const app = express();
 const port = process.env.PORT;
-app.use(bodyParser.json({ limit: "10mb" })); // Adjust the limit as needed
-app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+// DB connection
 connection();
 
-
+// Routes
 app.use('/auth', authRouter);
-app.use('/admin',adminRouter,messageRouter);
-app.use('/patients', patientRouter,appointmentRouter); // Use patient routes  
-app.use('/doctors', doctorRouter); // Use doctor routes
-app.use('/generate', billingRouter); // Use billing routes
+app.use('/admin', adminRouter, messageRouter);
+app.use('/patients', patientRouter, appointmentRouter);
+app.use('/doctors', doctorRouter);
+app.use('/generate', billingRouter);
 
+// Server
 app.listen(port, () => {
-    console.log(`Server started at ${port}`);
+  console.log(`Server started at ${port}`);
 });
