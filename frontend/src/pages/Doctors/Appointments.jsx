@@ -5,7 +5,7 @@ import { faTrash, faCalendarCheck } from '@fortawesome/free-solid-svg-icons';
 import toast from 'react-hot-toast';
 
 // ✅ Centralized base URL
-const baseURL = 'http://localhost:3000';
+const baseURL = 'https://docucare-2jro.onrender.com';
 
 function Appointments() {
   const [appointments, setAppointments] = useState([]);
