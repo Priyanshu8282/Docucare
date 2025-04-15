@@ -4,7 +4,8 @@ import {
   getAllDoctors,
   getDoctorById,
   updateDoctor,
-  deleteDoctor
+  deleteDoctor,
+  getDoctorNames, // Import the new controller
 } from '../../controller/Doctor/doctorController.js';
 import { VerifyToken } from '../../middleware/auth.js'; // Import the middleware
 
@@ -13,13 +14,20 @@ const doctorRouter = express.Router();
 doctorRouter
   .route('/')
   .post(
-    VerifyToken(['Admin']), // Only Admins can create a doctor
+    VerifyToken(['Admin', 'Doctor']), // Only Admins can create a doctor
     createDoctor
   )
   .get(
-    VerifyToken(['Admin']), // Only Admins can create a doctor
+    VerifyToken(['Admin', 'Patient']), // Admins and Patients can view all doctors
     getAllDoctors
-  )
+  );
+
+doctorRouter
+  .route('/names') // New route for fetching doctor names
+  .get(
+    VerifyToken(['Admin', 'Patient', 'Doctor']), // Allow Admins, Patients, and Doctors to fetch doctor names
+    getDoctorNames
+  );
 
 doctorRouter
   .route('/:id')
@@ -28,7 +36,7 @@ doctorRouter
     getDoctorById
   )
   .patch(
-    VerifyToken(['Admin']), // Only Admins can update doctor details
+    VerifyToken(['Admin', 'Doctor']), // Only Admins can update doctor details
     updateDoctor
   )
   .delete(

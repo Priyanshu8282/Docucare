@@ -2,20 +2,29 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
-function Doctors() {
+const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
+
+function DoctorsTable() {
   const [doctors, setDoctors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [appointmentTime, setAppointmentTime] = useState('');
-  const [appointmentEndTime, setAppointmentEndTime] = useState('');
 
   useEffect(() => {
     const fetchDoctors = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get('http://localhost:3000/doctors');
-        setDoctors(response.data.doctors || []);
-        toast.success('Doctors fetched successfully!');
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${BASE_URL}/doctors`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data) {
+          setDoctors(response.data);
+          toast.success('Doctors fetched successfully!');
+        } else {
+          toast.error('Unexpected response format.');
+        }
       } catch (error) {
         console.error('Error fetching doctors:', error.response?.data || error.message);
         toast.error('Failed to fetch doctors.');
@@ -27,111 +36,65 @@ function Doctors() {
     fetchDoctors();
   }, []);
 
-  const handleBookAppointment = async (doctorId) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('You must be logged in to book an appointment.');
-        return;
-      }
-
-      if (!appointmentTime) {
-        toast.error('Please select an appointment time.');
-        return;
-      }
-
-      const response = await axios.post(
-        'http://localhost:3000/appointments',
-        {
-          doctor: doctorId,
-          appointmentTime,
-          appointmentEndTime,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      toast.success('Appointment booked successfully!');
-      // Clear form
-      setSelectedDoctor(null);
-      setAppointmentTime('');
-      setAppointmentEndTime('');
-    } catch (error) {
-      console.error('Error booking appointment:', error.response?.data || error.message);
-      toast.error('Failed to book appointment.');
-    }
-  };
-
   return (
     <div className="container mx-auto p-6">
       <Toaster />
-      <h1 className="text-2xl font-bold mb-4 text-[#2C698D]">All Doctors</h1>
+      <h1 className="text-2xl font-bold mb-4 text-[#2C698D]">Doctors List</h1>
 
       {isLoading ? (
         <p>Loading doctors...</p>
       ) : doctors.length === 0 ? (
         <p>No doctors found.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {doctors.map((doctor) => (
-            <div
-              key={doctor._id}
-              className="bg-white shadow-md rounded-lg p-4 border border-gray-200 hover:shadow-lg transition-shadow duration-300"
-            >
-              <h2 className="text-lg font-semibold text-[#2C698D] mb-2">{doctor.name}</h2>
-              <p className="text-sm text-gray-600 mb-1">
-                <strong>Specialty:</strong> {doctor.specialty || 'N/A'}
-              </p>
-              <p className="text-sm text-gray-600 mb-1">
-                <strong>Experience:</strong> {doctor.yearsOfExperience || 0} years
-              </p>
-              <p className="text-sm text-gray-600 mb-1">
-                <strong>Contact:</strong> {doctor.phoneNumber || 'N/A'}
-              </p>
-              <p className="text-sm text-gray-600 mb-3">
-                <strong>Fees:</strong> ${doctor.fees || 'N/A'}
-              </p>
-
-              <button
-                onClick={() => setSelectedDoctor(doctor._id)}
-                className="bg-[#2C698D] text-white px-4 py-2 rounded hover:bg-[#1e4e6c] transition-colors duration-300"
-              >
-                Book Appointment
-              </button>
-
-              {selectedDoctor === doctor._id && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Appointment Start Time:</label>
-                  <input
-                    type="datetime-local"
-                    value={appointmentTime}
-                    onChange={(e) => setAppointmentTime(e.target.value)}
-                    className="border p-2 rounded w-full mb-2"
+        <table className="w-full border-collapse border border-gray-300">
+          <thead>
+            <tr className="bg-gray-100 text-left">
+              <th className="border border-gray-300 p-2">Image</th>
+              <th className="border border-gray-300 p-2">Name</th>
+              <th className="border border-gray-300 p-2">Age</th>
+              <th className="border border-gray-300 p-2">Gender</th>
+              <th className="border border-gray-300 p-2">Specialization</th>
+              <th className="border border-gray-300 p-2">Phone</th>
+              <th className="border border-gray-300 p-2">Experience</th>
+              <th className="border border-gray-300 p-2">Fees</th>
+              <th className="border border-gray-300 p-2">Availability</th>
+            </tr>
+          </thead>
+          <tbody>
+            {doctors.map((doctor) => (
+              <tr key={doctor._id}>
+                <td className="border border-gray-300 p-2">
+                  <img
+                    src={doctor.ProfileImage || 'https://via.placeholder.com/150'}
+                    alt={doctor.name}
+                    className="h-16 w-16 rounded-full object-cover"
                   />
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Appointment End Time:</label>
-                  <input
-                    type="datetime-local"
-                    value={appointmentEndTime}
-                    onChange={(e) => setAppointmentEndTime(e.target.value)}
-                    className="border p-2 rounded w-full mb-2"
-                  />
-                  <button
-                    onClick={() => handleBookAppointment(doctor._id)}
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors duration-300 w-full"
-                  >
-                    Confirm Booking
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                </td>
+                <td className="border border-gray-300 p-2">{doctor.name}</td>
+                <td className="border border-gray-300 p-2">{doctor.age}</td>
+                <td className="border border-gray-300 p-2">{doctor.gender}</td>
+                <td className="border border-gray-300 p-2">{doctor.specialty}</td>
+                <td className="border border-gray-300 p-2">{doctor.phoneNumber}</td>
+                <td className="border border-gray-300 p-2">{doctor.yearsOfExperience} years</td>
+                <td className="border border-gray-300 p-2">₹{doctor.fees}</td>
+                <td className="border border-gray-300 p-2">
+                  {Array.isArray(doctor.availability) && doctor.availability.length > 0 ? (
+                    doctor.availability.map((slot, index) => (
+                      <div key={index}>
+                        {slot.day}: {slot.startTime} - {slot.endTime}
+                      </div>
+                    ))
+                  ) : (
+                    <span>Not Available</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
 }
 
-export default Doctors;
+export default DoctorsTable;

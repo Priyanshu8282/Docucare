@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
+const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
+
 function PatientRecords() {
   const [patients, setPatients] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,15 +28,17 @@ function PatientRecords() {
           return;
         }
 
-        const response = await axios.get('http://localhost:3000/doctor/patients', {
+        // Fetch patient records from the API
+        const response = await axios.get(`${BASE_URL}/doctors/patientrecords`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+        console.log('Fetched patients:', response.data); // Log the fetched data for debugging
 
+        // Update state with fetched data
         setPatients(response.data);
         setFilteredPatients(response.data);
-        toast.success('Patient records fetched successfully!');
       } catch (error) {
         console.error('Error fetching patient records:', error.response?.data || error.message);
         toast.error('Failed to fetch patient records.');
@@ -50,206 +54,52 @@ function PatientRecords() {
     setSearchQuery(query);
     setFilteredPatients(
       patients.filter((patient) =>
-        patient.name.toLowerCase().includes(query) || patient.contact.toLowerCase().includes(query)
+        patient.name.toLowerCase().includes(query) ||
+        patient.contact.toLowerCase().includes(query)
       )
     );
   };
 
-  // Handle form input change
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  // Add or update patient
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Token is missing. Please log in again.');
-        return;
-      }
-
-      if (editingPatient) {
-        // Update patient
-        await axios.put(`http://localhost:3000/doctor/patients/${editingPatient.id}`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        toast.success('Patient updated successfully!');
-      } else {
-        // Add new patient
-        const response = await axios.post('http://localhost:3000/doctor/patients', formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setPatients([...patients, response.data]);
-        setFilteredPatients([...patients, response.data]);
-        toast.success('Patient added successfully!');
-      }
-
-      setFormData({ name: '', age: '', contact: '', address: '', medicalHistory: '' });
-      setEditingPatient(null);
-    } catch (error) {
-      console.error('Error saving patient:', error.response?.data || error.message);
-      toast.error('Failed to save patient.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Edit patient
-  const handleEdit = (patient) => {
-    setEditingPatient(patient);
-    setFormData(patient);
-  };
-
-  // Delete patient
-  const handleDelete = async (id) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Token is missing. Please log in again.');
-        return;
-      }
-
-      await axios.delete(`http://localhost:3000/doctor/patients/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setPatients(patients.filter((patient) => patient.id !== id));
-      setFilteredPatients(filteredPatients.filter((patient) => patient.id !== id));
-      toast.success('Patient deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting patient:', error.response?.data || error.message);
-      toast.error('Failed to delete patient.');
-    }
-  };
-
   return (
-    <div className="p-6 bg-white shadow-md rounded-lg">
-      <Toaster />
-      <h1 className="text-2xl font-bold text-[#2C698D] mb-4">Patient Records</h1>
+    <div className="p-6">
+      <Toaster position="top-right" />
+      <h1 className="text-3xl font-bold mb-4 text-[#2C698D]">Patient Records 📋</h1>
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search by name or contact"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          className="w-full border border-gray-300 rounded p-2"
-        />
-      </div>
+      <input
+        type="text"
+        placeholder="Search by name or contact"
+        value={searchQuery}
+        onChange={handleSearchChange}
+        className="w-full p-2 mb-4 border border-gray-300 rounded"
+      />
 
-      {/* Add/Edit Patient Form */}
-      <form onSubmit={handleSubmit} className="mb-6 space-y-4">
-        <h2 className="text-xl font-semibold text-gray-700">
-          {editingPatient ? 'Edit Patient' : 'Add Patient'}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={formData.name}
-            onChange={handleInputChange}
-            className="p-2 border border-gray-300 rounded"
-            required
-          />
-          <input
-            type="number"
-            name="age"
-            placeholder="Age"
-            value={formData.age}
-            onChange={handleInputChange}
-            className="p-2 border border-gray-300 rounded"
-            required
-          />
-          <input
-            type="text"
-            name="contact"
-            placeholder="Contact"
-            value={formData.contact}
-            onChange={handleInputChange}
-            className="p-2 border border-gray-300 rounded"
-            required
-          />
-          <input
-            type="text"
-            name="address"
-            placeholder="Address"
-            value={formData.address}
-            onChange={handleInputChange}
-            className="p-2 border border-gray-300 rounded"
-            required
-          />
-          <textarea
-            name="medicalHistory"
-            placeholder="Medical History"
-            value={formData.medicalHistory}
-            onChange={handleInputChange}
-            className="p-2 border border-gray-300 rounded"
-            rows="3"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-[#2C698D] text-white px-4 py-2 rounded hover:bg-[#5EBEC4]"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Saving...' : editingPatient ? 'Update Patient' : 'Add Patient'}
-        </button>
-      </form>
-
-      {/* Patient Records Table */}
       {filteredPatients.length > 0 ? (
-        <table className="w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 p-2">Name</th>
-              <th className="border border-gray-300 p-2">Age</th>
-              <th className="border border-gray-300 p-2">Contact</th>
-              <th className="border border-gray-300 p-2">Address</th>
-              <th className="border border-gray-300 p-2">Medical History</th>
-              <th className="border border-gray-300 p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredPatients.map((patient) => (
-              <tr key={patient.id}>
-                <td className="border border-gray-300 p-2">{patient.name}</td>
-                <td className="border border-gray-300 p-2">{patient.age}</td>
-                <td className="border border-gray-300 p-2">{patient.contact}</td>
-                <td className="border border-gray-300 p-2">{patient.address}</td>
-                <td className="border border-gray-300 p-2">{patient.medicalHistory}</td>
-                <td className="border border-gray-300 p-2">
-                  <button
-                    onClick={() => handleEdit(patient)}
-                    className="text-blue-500 hover:underline mr-2"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(patient.id)}
-                    className="text-red-500 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white">
+            <thead>
+              <tr>
+                <th className="py-2 px-4 border">Name</th>
+                <th className="py-2 px-4 border">Age</th>
+                <th className="py-2 px-4 border">Contact</th>
+                <th className="py-2 px-4 border">Address</th>
+                <th className="py-2 px-4 border">Medical History</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredPatients.map((patient) => (
+                <tr key={patient._id}>
+                  <td className="py-2 px-4 border">{patient.name}</td>
+                  <td className="py-2 px-4 border">{patient.age}</td>
+                  <td className="py-2 px-4 border">{patient.contact}</td>
+                  <td className="py-2 px-4 border">{patient.address}</td>
+                  <td className="py-2 px-4 border">{patient.medicalHistory}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <div className="text-center text-gray-500 mt-4">No patient records found.</div>
+        <p>No patients found.</p>
       )}
     </div>
   );

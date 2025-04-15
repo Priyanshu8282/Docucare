@@ -11,25 +11,28 @@ function Appointment() {
     reason: '',
   });
   const [doctors, setDoctors] = useState([]);
+  const BASE_URL = 'http://localhost:3000';
 
+  // Fetch appointments and doctor names on component mount
   useEffect(() => {
     const fetchAppointments = async () => {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('token');
-        if (!token) {
+        const userId = localStorage.getItem('userId'); // Retrieve userId from localStorage
+        if (!token || !userId) {
           toast.error('You must be logged in to view appointments.');
           return;
         }
 
-        const response = await axios.get('http://localhost:3000/appointments', {
+        // Fetch appointments using userId
+        const response = await axios.get(`${BASE_URL}/patients/appointments/${userId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
-        setAppointments(response.data.appointments || []);
-        toast.success('Appointments fetched successfully!');
+        setAppointments(response.data || []);
       } catch (error) {
         console.error('Error fetching appointments:', error.response?.data || error.message);
         toast.error('Failed to fetch appointments.');
@@ -40,11 +43,15 @@ function Appointment() {
 
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/doctors');
-        setDoctors(response.data.doctors || []);
+        const response = await axios.get(`${BASE_URL}/doctors/names`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        setDoctors(response.data || []);
       } catch (error) {
-        console.error('Error fetching doctors:', error.response?.data || error.message);
-        toast.error('Failed to fetch doctors.');
+        console.error('Error fetching doctor names:', error.response?.data || error.message);
+        toast.error('Failed to fetch doctor names.');
       }
     };
 
@@ -52,23 +59,35 @@ function Appointment() {
     fetchDoctors();
   }, []);
 
+  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  // Handle form submission to book an appointment
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
+      const userId = localStorage.getItem('userId'); // Retrieve user ID from localStorage
+      const patientName = localStorage.getItem('fullName'); // Retrieve fullName from localStorage
+
+      if (!token || !userId || !patientName) {
         toast.error('You must be logged in to book an appointment.');
         return;
       }
 
+      // Include the user ID and patientName in the form data
+      const appointmentData = {
+        ...formData,
+        user: userId,
+        patientName,
+      };
+
       const response = await axios.post(
-        'http://localhost:3000/appointments',
-        formData,
+        `${BASE_URL}/patients/appointments`,
+        appointmentData,
         {
           headers: {
             Authorization: `Bearer ${token}`,

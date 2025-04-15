@@ -9,12 +9,11 @@ const BLOOD_GROUP_ENUM = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
 // ✅ Create or Update Patient
 export const createOrUpdatePatient = async (req, res) => {
   try {
-    const { user, fullName, email, mobile_no, age, gender, bloodGroup, allergies } = req.body;
+    const { user, fullName, email, mobile_no, age, gender, bloodGroup, allergies, profilePicture } = req.body;
     let { address } = req.body;
-    const profilePicture = req.file ? req.file.path : null; // Assuming req.file.path contains the Cloudinary URL
 
     // Validate required fields
-    if (!user || !fullName || !email || !mobile_no || !age || !gender || !bloodGroup) {
+    if (!fullName || !email || !mobile_no || !age || !gender || !bloodGroup) {
       return res.status(400).json({ message: "All required fields must be provided." });
     }
 
@@ -41,7 +40,7 @@ export const createOrUpdatePatient = async (req, res) => {
       age,
       gender,
       bloodGroup,
-      profilePicture, // Store Cloudinary URL here
+      profilePicture, // Profile picture is now taken from req.body
       allergies,
       address: {
         street: address?.street || '',
@@ -79,6 +78,80 @@ export const createOrUpdatePatient = async (req, res) => {
   }
 };
 
+export const createPatient = async (req, res) => {
+  try {
+    const { fullName, email, mobile_no, age, gender, bloodGroup, allergies, address, profilePicture } = req.body;
+
+    // Validate required fields
+    if (!fullName || !email || !mobile_no || !age || !gender || !bloodGroup) {
+      return res.status(400).json({ message: "All required fields must be provided." });
+    }
+
+    // Validate enum fields
+    if (!GENDER_ENUM.includes(gender)) {
+      return res.status(400).json({ message: "Invalid gender value." });
+    }
+    if (!BLOOD_GROUP_ENUM.includes(bloodGroup)) {
+      return res.status(400).json({ message: "Invalid blood group value." });
+    }
+
+    // Prepare patient data
+    const patientData = {
+      fullName,
+      email,
+      mobile_no,
+      age,
+      gender,
+      bloodGroup,
+      profilePicture, // Profile picture is now taken from req.body
+      allergies,
+      address: {
+        street: address?.street || '',
+        city: address?.city || '',
+        state: address?.state || '',
+        zipCode: address?.zipCode || '',
+      },
+    };
+
+    // Create new patient
+    const newPatient = new Patient(patientData);
+    await newPatient.save();
+
+    res.status(201).json({
+      message: "Patient created successfully.",
+      patient: newPatient,
+    });
+  } catch (error) {
+    console.error("Error creating patient:", error);
+    res.status(500).json({ message: "Error creating patient.", error });
+  }
+};
+
+// ✅ Get All Patients
+export const getAllPatients = async (req, res) => {
+  try {
+    // Fetch all patients
+    const patients = await Patient.find().populate("user");
+
+    res.status(200).json(patients);
+  } catch (error) {
+    console.error("Error fetching patients:", error);
+    res.status(500).json({ message: "Error fetching patients.", error });
+  }
+};
+
+// ✅ Fetch Patient Names
+export const getPatientNames = async (req, res) => {
+  try {
+    // Fetch only the 'fullName' field of all patients
+    const patientNames = await Patient.find().select('patientName');
+
+    res.status(200).json(patientNames);
+  } catch (error) {
+    console.error("Error fetching patient names:", error);
+    res.status(500).json({ message: "Error fetching patient names.", error });
+  }
+};
 
 
 
@@ -112,27 +185,22 @@ export const getPatientById = async (req, res) => {
 
 // ✅ Update Patient Details
 export const updatePatient = async (req, res) => {
+  const { id } = req.params;
+
   try {
-    const { age, gender, bloodGroup, allergies, address, contactNumber } = req.body;
+    const updatedPatient = await Patient.findByIdAndUpdate(id, req.body, {
+      new: true, // Return the updated document
+      runValidators: true, // Ensure validation is applied
+    });
 
-    // Validate enum fields
-    if (gender && !GENDER_ENUM.includes(gender)) {
-      return res.status(400).json({ message: "Invalid gender value" });
+    if (!updatedPatient) {
+      return res.status(404).json({ error: 'Patient not found.' });
     }
-    if (bloodGroup && !BLOOD_GROUP_ENUM.includes(bloodGroup)) {
-      return res.status(400).json({ message: "Invalid blood group value" });
-    }
 
-    const updatedPatient = await Patient.findByIdAndUpdate(
-      req.params.id,
-      { age, gender, bloodGroup, allergies, address, contactNumber },
-      { new: true }
-    );
-    if (!updatedPatient) return res.status(404).json({ message: "Patient not found" });
-
-    res.status(200).json({ message: "Patient updated successfully", patient: updatedPatient });
+    res.status(200).json({ patient: updatedPatient });
   } catch (error) {
-    res.status(500).json({ message: "Error updating patient", error });
+    console.error('Error updating patient:', error);
+    res.status(500).json({ error: 'Internal server error.' });
   }
 };
 

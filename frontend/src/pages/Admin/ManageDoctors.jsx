@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faEdit, faTrash, faUserMd } from '@fortawesome/free-solid-svg-icons';
+import toast, { Toaster } from 'react-hot-toast'; // Import React Hot Toast
+
+const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
 
 function ManageDoctors() {
   const [doctors, setDoctors] = useState([]);
@@ -12,30 +15,31 @@ function ManageDoctors() {
     specialty: '',
     phoneNumber: '',
     yearsOfExperience: '',
-    availability: [], // Initialize as an empty array
+    availability: [],
     fees: '',
     ProfileImage: '',
   });
+  const [availability, setAvailability] = useState({ day: '', startTime: '', endTime: '' });
   const [editingDoctor, setEditingDoctor] = useState(null);
 
-  // Token for authentication
-  const token = localStorage.getItem('token'); // Assuming the token is stored in localStorage
+  const token = localStorage.getItem('token');
 
-  // Axios instance with token
   const axiosInstance = axios.create({
-    baseURL: 'http://localhost:3000', // Replace with your backend URL
+    baseURL: BASE_URL, // Use the base URL variable
     headers: {
-      Authorization: `Bearer ${token}`, // Pass the token in the Authorization header
+      Authorization: `Bearer ${token}`,
     },
   });
 
-  // Fetch all doctors from the backend
+  // Fetch all doctors
   const fetchDoctors = async () => {
     try {
       const response = await axiosInstance.get('/doctors');
       setDoctors(response.data);
+      toast.success('Doctors fetched successfully!');
     } catch (error) {
       console.error('Error fetching doctors:', error);
+      toast.error('Failed to fetch doctors.');
     }
   };
 
@@ -59,6 +63,24 @@ function ManageDoctors() {
     }
   };
 
+  const handleAvailabilityChange = (e) => {
+    const { name, value } = e.target;
+    setAvailability({ ...availability, [name]: value });
+  };
+
+  const addAvailability = () => {
+    if (!availability.day || !availability.startTime || !availability.endTime) {
+      toast.error('Please fill in all availability fields.');
+      return;
+    }
+    setNewDoctor({
+      ...newDoctor,
+      availability: [...newDoctor.availability, availability],
+    });
+    setAvailability({ day: '', startTime: '', endTime: '' });
+    toast.success('Availability added!');
+  };
+
   // Add a new doctor
   const handleAddDoctor = async () => {
     if (
@@ -71,7 +93,7 @@ function ManageDoctors() {
       !newDoctor.fees ||
       !newDoctor.ProfileImage
     ) {
-      alert('Please fill in all fields and upload an image.');
+      toast.error('Please fill in all fields and upload an image.');
       return;
     }
     try {
@@ -88,26 +110,31 @@ function ManageDoctors() {
         fees: '',
         ProfileImage: '',
       });
+      toast.success('Doctor added successfully!');
     } catch (error) {
       console.error('Error adding doctor:', error);
+      toast.error('Failed to add doctor.');
     }
   };
 
   // Edit a doctor
   const handleEditDoctor = (doctor) => {
     setEditingDoctor(doctor);
-    setNewDoctor(doctor);
+    setNewDoctor({
+      ...doctor,
+      availability: doctor.availability || [], // Ensure availability is an array
+    });
+    toast('Editing doctor details.');
   };
 
   // Update a doctor
   const handleUpdateDoctor = async () => {
+    if (!editingDoctor) return;
+
     try {
-      const response = await axiosInstance.put(`/doctors/${editingDoctor.id}`, newDoctor);
-      setDoctors(
-        doctors.map((doc) =>
-          doc.id === editingDoctor.id ? response.data.doctor : doc
-        )
-      );
+      const response = await axiosInstance.patch(`/doctors/${editingDoctor._id}`, newDoctor);
+      console.log('Doctor updated successfully:', response.data);
+      fetchDoctors();
       setEditingDoctor(null);
       setNewDoctor({
         name: '',
@@ -120,23 +147,34 @@ function ManageDoctors() {
         fees: '',
         ProfileImage: '',
       });
+      toast.success('Doctor updated successfully!');
     } catch (error) {
       console.error('Error updating doctor:', error);
+      toast.error('Failed to update doctor.');
     }
   };
 
   // Delete a doctor
   const handleDeleteDoctor = async (id) => {
+    if (!id) {
+      console.error('Doctor ID is missing.');
+      toast.error('Doctor ID is missing.');
+      return;
+    }
+
     try {
       await axiosInstance.delete(`/doctors/${id}`);
-      setDoctors(doctors.filter((doc) => doc.id !== id));
+      setDoctors(doctors.filter((doctor) => doctor._id !== id)); // Use `_id` for MongoDB
+      toast.success('Doctor deleted successfully!');
     } catch (error) {
-      console.error('Error deleting doctor:', error);
+      console.error('Error deleting doctor:', error.response?.data || error.message);
+      toast.error('Failed to delete doctor.');
     }
   };
 
   return (
     <div className="p-6 bg-white shadow-md rounded-lg">
+      <Toaster position="top-right" reverseOrder={false} /> {/* Add Toaster for notifications */}
       <h1 className="text-2xl font-bold text-[#2C698D] mb-4">
         <FontAwesomeIcon icon={faUserMd} className="mr-2" />
         Manage Doctors
@@ -215,6 +253,58 @@ function ManageDoctors() {
             className="p-2 border border-gray-300 rounded"
           />
         </div>
+
+        {/* Availability Section */}
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">Availability</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <select
+              name="day"
+              value={availability.day}
+              onChange={handleAvailabilityChange}
+              className="p-2 border border-gray-300 rounded"
+            >
+              <option value="" disabled>
+                Select Day
+              </option>
+              <option value="Monday">Monday</option>
+              <option value="Tuesday">Tuesday</option>
+              <option value="Wednesday">Wednesday</option>
+              <option value="Thursday">Thursday</option>
+              <option value="Friday">Friday</option>
+              <option value="Saturday">Saturday</option>
+              <option value="Sunday">Sunday</option>
+            </select>
+            <input
+              type="time"
+              name="startTime"
+              value={availability.startTime}
+              onChange={handleAvailabilityChange}
+              className="p-2 border border-gray-300 rounded"
+            />
+            <input
+              type="time"
+              name="endTime"
+              value={availability.endTime}
+              onChange={handleAvailabilityChange}
+              className="p-2 border border-gray-300 rounded"
+            />
+          </div>
+          <button
+            onClick={addAvailability}
+            className="mt-2 bg-[#2C698D] text-white px-4 py-2 rounded hover:bg-[#5EBEC4] transition duration-300"
+          >
+            Add Availability
+          </button>
+          <div className="mt-2">
+            {(newDoctor.availability || []).map((slot, index) => (
+              <div key={index} className="text-gray-700">
+                {slot.day}: {slot.startTime} - {slot.endTime}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <button
           onClick={editingDoctor ? handleUpdateDoctor : handleAddDoctor}
           className="mt-4 bg-[#2C698D] text-white px-4 py-2 rounded hover:bg-[#5EBEC4] transition duration-300"
@@ -242,7 +332,7 @@ function ManageDoctors() {
         </thead>
         <tbody>
           {doctors.map((doctor) => (
-            <tr key={doctor.id}>
+            <tr key={doctor._id}>
               <td className="border border-gray-300 p-2">
                 <img src={doctor.ProfileImage} alt={doctor.name} className="h-16 w-16 rounded-full" />
               </td>
@@ -268,7 +358,7 @@ function ManageDoctors() {
                   <FontAwesomeIcon icon={faEdit} />
                 </button>
                 <button
-                  onClick={() => handleDeleteDoctor(doctor.id)}
+                  onClick={() => handleDeleteDoctor(doctor._id)}
                   className="text-red-500 hover:underline"
                 >
                   <FontAwesomeIcon icon={faTrash} />

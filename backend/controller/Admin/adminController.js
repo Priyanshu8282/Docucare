@@ -32,12 +32,109 @@ export const deleteUser = async (req, res) => {
   }
 };
 
+export const createAppointment = async (req, res) => {
+  try {
+    const { patientName, doctorName, appointmentTime, reason } = req.body;
+
+    // Validate required fields
+    if ( !patientName || !doctorName || !appointmentTime) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+  
+
+  
+
+    // Create a new appointment
+    const newAppointment = new Appointment({
+    
+      patientName,
+      doctorName,
+      appointmentTime,
+      reason,
+    });
+
+    await newAppointment.save();
+
+    res.status(201).json({
+      message: "Appointment created successfully",
+      appointment: newAppointment,
+    });
+  } catch (error) {
+    console.error("Error creating appointment:", error);
+    res.status(500).json({ message: "Server Error", error });
+  }
+};
+
 export const getAllAppointments = async (req, res) => {
   try {
-    const appointments = await Appointment.find().populate("patient doctor", "name email");
+    const appointments = await Appointment.find({})
     res.status(200).json(appointments);
   } catch (error) {
     res.status(500).json({ message: "Server Error" });
+  }
+};
+
+export const updateAppointment = async (req, res) => {
+  const { appointmentId } = req.params;
+  const { patientName, doctorName, appointmentTime, reason } = req.body;
+
+  try {
+    // Validate required fields
+    if (!patientName || !doctorName || !appointmentTime) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Find and update the appointment
+    const updatedAppointment = await Appointment.findByIdAndUpdate(
+      appointmentId,
+      { patientName, doctorName, appointmentTime, reason },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedAppointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    res.status(200).json({
+      message: "Appointment updated successfully",
+      appointment: updatedAppointment,
+    });
+  } catch (error) {
+    console.error("Error updating appointment:", error);
+    res.status(500).json({ message: "Server Error", error });
+  }
+};
+
+export const updateAppointmentStatus = async (req, res) => {
+  const { appointmentId } = req.params; // Get appointment ID from the request parameters
+  const { status } = req.body; // Get the new status from the request body
+
+  try {
+    // Validate the status value
+    const validStatuses = ['booked', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    // Find and update the appointment's status
+    const updatedAppointment = await Appointment.findByIdAndUpdate(
+      appointmentId,
+      { status },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedAppointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    res.status(200).json({
+      message: "Appointment status updated successfully",
+      appointment: updatedAppointment,
+    });
+  } catch (error) {
+    console.error("Error updating appointment status:", error);
+    res.status(500).json({ message: "Server Error", error });
   }
 };
 

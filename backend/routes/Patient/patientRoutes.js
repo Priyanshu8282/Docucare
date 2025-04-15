@@ -4,6 +4,11 @@ import {
   getMedicalHistory,
   getAllDoctors,
   createOrUpdatePatient,
+  createPatient,
+  getAllPatients,
+  deletePatient,
+  updatePatient,
+  getPatientNames
 } from '../../controller/Patient/patientController.js'; // Import the controller functions
 import { VerifyToken } from '../../middleware/auth.js'; // Import the middleware
 import upload from '../../config/cloudinary.js'; // Import Multer middleware for file uploads
@@ -17,7 +22,41 @@ patientRouter
     VerifyToken(['Patient', 'Admin']), // Allow Patients and Admins to create or update profiles
     upload.single('profilePicture'), // Handle file uploads for profilePicture
     createOrUpdatePatient
+  )
+  
+  .get(
+    VerifyToken(['Patient', 'Admin']),
+   getAllPatients // Create a new patient profile
   );
+
+  patientRouter
+  .route('/create')
+  .post(
+    VerifyToken(['Admin']), // Only Admins can create a new patient
+    upload.single('profilePicture'), // Handle file uploads for profilePicture
+    createPatient
+  );
+
+  patientRouter
+  .route('/:id')
+  .patch(
+    VerifyToken(['Admin']), // Only Admins can update patient details
+    upload.single('profilePicture'), // Handle file uploads for profilePicture
+    updatePatient
+  )
+  .delete(
+    VerifyToken(['Admin']), // Only Admins can delete a patient
+    deletePatient
+  );
+
+  patientRouter.
+route('/names')
+.get(
+    VerifyToken(['Patient', 'Admin']), // Allow Patients and Admins to view patient names
+    getPatientNames // Fetch only the 'fullName' field of all patients
+  );
+  
+
 
 // Route to get patient profile by userId
 patientRouter

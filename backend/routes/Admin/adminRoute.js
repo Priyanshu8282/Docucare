@@ -10,7 +10,10 @@ import {
   getAllDoctors,
   getAllPatients,
   updatePatient,
-  deletePatient
+  deletePatient,
+  createAppointment,
+  updateAppointment,
+  updateAppointmentStatus
 } from '../../controller/Admin/adminController.js';
 
 const adminRouter = express.Router();
@@ -20,16 +23,24 @@ adminRouter.get('/users', getAllUsers);
 adminRouter.delete('/users/:userId', deleteUser);
 
 // Appointment routes
+adminRouter.post('/appointments', createAppointment); // Create an appointment
 adminRouter.get('/appointments', getAllAppointments);
 adminRouter.delete('/appointments/:appointmentId', deleteAppointment);
 
+adminRouter.patch('/appointments/:appointmentId', updateAppointment)//
+//  Update an appointment
 // Billing routes
+adminRouter.patch('/appointments/:appointmentId/status', updateAppointmentStatus);
+
 adminRouter.get('/bills', getAllBills);
 adminRouter.delete('/bills/:billId', deleteBill);
 
 // Doctor routes
 adminRouter.get('/doctors', getAllDoctors);
 adminRouter.put('/doctors/status', updateDoctorStatus);
+
+
+
 
 // Patient routes
 adminRouter.get('/patients', getAllPatients);

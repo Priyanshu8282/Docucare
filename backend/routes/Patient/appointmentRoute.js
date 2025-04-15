@@ -13,7 +13,7 @@ appointmentRouter
   .post(createAppointment);
 
 appointmentRouter
-  .route('/appointments/:id')
+  .route('/appointments/:userId')
   .get(getAppointmentById)
   .put(updateAppointment)
   .delete(deleteAppointment);

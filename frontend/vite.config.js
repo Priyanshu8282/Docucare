@@ -12,6 +12,5 @@ export default defineConfig({
     port: 4000,
   },
   plugins: [react(), tailwindcss()],
-  outDir: 'dist',
+  envDir: 'config/',
 });
-

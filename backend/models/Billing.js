@@ -1,14 +1,36 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const billingSchema = new mongoose.Schema(
-  {
-    patient: { type: mongoose.Schema.Types.ObjectId, ref: "Patient", required: true },
-    amount: { type: Number, required: true },
-    status: { type: String, enum: ["Paid", "Pending"], default: "Pending" },
-    date: { type: Date, default: Date.now }
+const billSchema = new mongoose.Schema({
+  patient: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Patient',
+    required: true,
   },
-  { timestamps: true }
-);
+  doctor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Doctor',
+    required: true,
+  },
+  services: [
+    {
+      description: String,
+      amount: Number,
+    },
+  ],
+  totalAmount: {
+    type: Number,
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ['Paid', 'Unpaid'],
+    default: 'Unpaid',
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
-const Billing = mongoose.model("Billing", billingSchema);
-export default Billing;
+const Bill = mongoose.model('Bill', billSchema);
+export default Bill;

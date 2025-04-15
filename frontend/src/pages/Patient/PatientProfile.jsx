@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
+const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
+
 function PatientProfile() {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -33,7 +35,7 @@ function PatientProfile() {
           return;
         }
 
-        const response = await axios.get(`http://localhost:3000/patients/${userId}`, {
+        const response = await axios.get(`${BASE_URL}/patients/${userId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -114,10 +116,10 @@ function PatientProfile() {
         formDataToSend.append('profilePicture', formData.profilePicture);
       }
 
-      const response = await axios.post('http://localhost:3000/patients', formDataToSend, {
+      const response = await axios.post(`${BASE_URL}/patients`, formDataToSend, {
         headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data', // Required for file uploads
+          Authorization: `Bearer ${token}`, // Add the token for authorization
+          // Do not set 'Content-Type' manually; Axios will set it automatically for FormData
         },
       });
 

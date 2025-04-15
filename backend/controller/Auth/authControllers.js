@@ -116,7 +116,7 @@ const loginUser = async (req, res) => {
         if (email) {
             // Send OTP email
             await sendOtpEmail(email, 'Your DocuCare OTP Code', {
-                name: `${user.firstName} ${user.lastName}`,
+                name: `${user.fullName}`,   
                 otp,
             });
         } else if (mobile_no) {

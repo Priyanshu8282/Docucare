@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
@@ -6,58 +7,187 @@ import {
   faTrash,
   faCalendarCheck,
 } from '@fortawesome/free-solid-svg-icons';
+import toast, { Toaster } from 'react-hot-toast';
+
+const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
 
 function Appointments() {
-  const [appointments, setAppointments] = useState([
-    { id: 1, patient: 'John Doe', doctor: 'Dr. Smith', date: '2025-04-10', time: '10:00 AM' },
-    { id: 2, patient: 'Jane Doe', doctor: 'Dr. Brown', date: '2025-04-12', time: '2:00 PM' },
-  ]);
+  const [appointments, setAppointments] = useState([]); // Ensure initial state is an array
+  const [doctors, setDoctors] = useState([]); // State for doctor names
   const [newAppointment, setNewAppointment] = useState({
-    patient: '',
+    patientName: '',
     doctor: '',
     date: '',
     time: '',
+    reason: '',
   });
   const [editingAppointment, setEditingAppointment] = useState(null);
+
+  // Fetch appointments and doctor names from the backend
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const response = await axios.get(`${BASE_URL}/admin/appointments`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`, // Include token for authentication
+          },
+        });
+        setAppointments(Array.isArray(response.data) ? response.data : []); // Ensure response is an array
+      } catch (error) {
+        console.error('Error fetching appointments:', error.response?.data || error.message);
+        toast.error('Failed to fetch appointments.');
+        setAppointments([]); // Fallback to an empty array in case of an error
+      }
+    };
+
+    const fetchDoctors = async () => {
+      try {
+        const response = await axios.get(`${BASE_URL}/doctors/names`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`, // Include token for authentication
+          },
+        });
+        setDoctors(response.data || []); // Set the fetched doctor names
+      } catch (error) {
+        console.error('Error fetching doctor names:', error.response?.data || error.message);
+        toast.error('Failed to fetch doctor names.');
+      }
+    };
+
+    fetchAppointments();
+    fetchDoctors();
+  }, []);
+
+  const handleDeleteAppointment = async (id) => {
+    try {
+      // Send the DELETE request to the backend
+      await axios.delete(`${BASE_URL}/admin/appointments/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`, // Include token for authentication
+        },
+      });
+
+      // Update the appointments state by removing the deleted appointment
+      setAppointments(appointments.filter((appointment) => appointment._id !== id));
+
+      // Show success notification
+      toast.success('Appointment deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting appointment:', error.response?.data || error.message);
+      toast.error('Failed to delete appointment.');
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewAppointment({ ...newAppointment, [name]: value });
   };
 
-  const handleAddAppointment = () => {
-    if (!newAppointment.patient || !newAppointment.doctor || !newAppointment.date || !newAppointment.time) {
-      alert('Please fill in all fields.');
+  const handleAddAppointment = async () => {
+    // Validate required fields
+    if (!newAppointment.patientName || !newAppointment.doctor || !newAppointment.date || !newAppointment.time) {
+      toast.error('Please fill in all fields.');
       return;
     }
-    setAppointments([
-      ...appointments,
-      { id: Date.now(), ...newAppointment },
-    ]);
-    setNewAppointment({ patient: '', doctor: '', date: '', time: '' });
+
+    try {
+      // Find the selected doctor from the dropdown
+      const selectedDoctor = doctors.find((doc) => doc._id === newAppointment.doctor);
+      if (!selectedDoctor) {
+        toast.error('Invalid doctor selected.');
+        return;
+      }
+
+      const doctorName = selectedDoctor.name;
+
+      // Prepare the payload for the API
+      const payload = {
+        ...newAppointment,
+        doctorName, // Add doctorName from the dropdown
+        appointmentTime: `${newAppointment.date}T${newAppointment.time}`, // Combine date and time
+      };
+
+      // Send the POST request to create an appointment
+      const response = await axios.post(`${BASE_URL}/admin/appointments`, payload);
+
+      // Update the appointments state with the new appointment
+      setAppointments([...appointments, response.data.appointment]);
+
+      // Reset the form fields
+      setNewAppointment({ patientName: '', doctor: '', date: '', time: '', reason: '' });
+
+      // Show success notification
+      toast.success('Appointment added successfully!');
+    } catch (error) {
+      console.error('Error adding appointment:', error.response?.data || error.message);
+      toast.error('Failed to add appointment.');
+    }
   };
 
   const handleEditAppointment = (appointment) => {
     setEditingAppointment(appointment);
-    setNewAppointment(appointment);
+    setNewAppointment({
+      patientName: appointment.patientName,
+      doctor: appointment.doctor, // This should be the doctor's ID
+      date: new Date(appointment.appointmentTime).toISOString().split('T')[0], // Extract date
+      time: new Date(appointment.appointmentTime).toISOString().split('T')[1].slice(0, 5), // Extract time
+      reason: appointment.reason,
+    });
   };
 
-  const handleUpdateAppointment = () => {
-    setAppointments(
-      appointments.map((appt) =>
-        appt.id === editingAppointment.id ? newAppointment : appt
-      )
-    );
-    setEditingAppointment(null);
-    setNewAppointment({ patient: '', doctor: '', date: '', time: '' });
-  };
+  const handleUpdateAppointment = async () => {
+    if (!newAppointment.patientName || !newAppointment.doctor || !newAppointment.date || !newAppointment.time) {
+      toast.error('Please fill in all fields.');
+      return;
+    }
 
-  const handleDeleteAppointment = (id) => {
-    setAppointments(appointments.filter((appt) => appt.id !== id));
+    try {
+      // Find the selected doctor from the dropdown
+      const selectedDoctor = doctors.find((doc) => doc._id === newAppointment.doctor);
+      if (!selectedDoctor) {
+        toast.error('Invalid doctor selected.');
+        return;
+      }
+
+      const doctorName = selectedDoctor.name;
+
+      // Prepare the payload for the API
+      const payload = {
+        patientName: newAppointment.patientName,
+        doctorName,
+        appointmentTime: `${newAppointment.date}T${newAppointment.time}`,
+        reason: newAppointment.reason,
+      };
+
+      // Send the PATCH request to update the appointment
+      const response = await axios.patch(`${BASE_URL}/admin/appointments/${editingAppointment._id}`, payload, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`, // Include token for authentication
+        },
+      });
+
+      // Update the appointments state with the updated appointment
+      setAppointments(
+        appointments.map((appointment) =>
+          appointment._id === editingAppointment._id ? response.data.appointment : appointment
+        )
+      );
+
+      // Reset the form fields and editing state
+      setNewAppointment({ patientName: '', doctor: '', date: '', time: '', reason: '' });
+      setEditingAppointment(null);
+
+      // Show success notification
+      toast.success('Appointment updated successfully!');
+    } catch (error) {
+      console.error('Error updating appointment:', error.response?.data || error.message);
+      toast.error('Failed to update appointment.');
+    }
   };
 
   return (
     <div className="p-6 bg-white shadow-md rounded-lg">
+      <Toaster position="top-right" reverseOrder={false} />
       <h1 className="text-2xl font-bold text-[#2C698D] mb-4">
         <FontAwesomeIcon icon={faCalendarCheck} className="mr-2" />
         Manage Appointments
@@ -71,20 +201,27 @@ function Appointments() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <input
             type="text"
-            name="patient"
+            name="patientName"
             placeholder="Patient Name"
-            value={newAppointment.patient}
+            value={newAppointment.patientName}
             onChange={handleInputChange}
             className="p-2 border border-gray-300 rounded"
           />
-          <input
-            type="text"
+          <select
             name="doctor"
-            placeholder="Doctor Name"
             value={newAppointment.doctor}
             onChange={handleInputChange}
             className="p-2 border border-gray-300 rounded"
-          />
+          >
+            <option value="" disabled>
+              Select a Doctor
+            </option>
+            {doctors.map((doctor) => (
+              <option key={doctor._id} value={doctor._id}>
+                {doctor.name}
+              </option>
+            ))}
+          </select>
           <input
             type="date"
             name="date"
@@ -98,6 +235,13 @@ function Appointments() {
             value={newAppointment.time}
             onChange={handleInputChange}
             className="p-2 border border-gray-300 rounded"
+          />
+          <textarea
+            name="reason"
+            placeholder="Reason for Appointment"
+            value={newAppointment.reason}
+            onChange={handleInputChange}
+            className="p-2 border border-gray-300 rounded col-span-1 md:col-span-2 lg:col-span-4"
           />
         </div>
         <button
@@ -117,32 +261,44 @@ function Appointments() {
             <th className="border border-gray-300 p-2">Doctor</th>
             <th className="border border-gray-300 p-2">Date</th>
             <th className="border border-gray-300 p-2">Time</th>
+            <th className="border border-gray-300 p-2">Reason</th>
+            <th className="border border-gray-300 p-2">Status</th>
             <th className="border border-gray-300 p-2">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {appointments.map((appointment) => (
-            <tr key={appointment.id}>
-              <td className="border border-gray-300 p-2">{appointment.patient}</td>
-              <td className="border border-gray-300 p-2">{appointment.doctor}</td>
-              <td className="border border-gray-300 p-2">{appointment.date}</td>
-              <td className="border border-gray-300 p-2">{appointment.time}</td>
-              <td className="border border-gray-300 p-2">
-                <button
-                  onClick={() => handleEditAppointment(appointment)}
-                  className="text-blue-500 hover:underline mr-2"
-                >
-                  <FontAwesomeIcon icon={faEdit} />
-                </button>
-                <button
-                  onClick={() => handleDeleteAppointment(appointment.id)}
-                  className="text-red-500 hover:underline"
-                >
-                  <FontAwesomeIcon icon={faTrash} />
-                </button>
+          {Array.isArray(appointments) && appointments.length > 0 ? (
+            appointments.map((appointment) => (
+              <tr key={appointment._id}>
+                <td className="border border-gray-300 p-2">{appointment.patientName}</td>
+                <td className="border border-gray-300 p-2">{appointment.doctorName}</td>
+                <td className="border border-gray-300 p-2">{new Date(appointment.appointmentTime).toLocaleDateString()}</td>
+                <td className="border border-gray-300 p-2">{new Date(appointment.appointmentTime).toLocaleTimeString()}</td>
+                <td className="border border-gray-300 p-2">{appointment.reason}</td>
+                <td className="border border-gray-300 p-2">{appointment.status}</td>
+                <td className="border border-gray-300 p-2">
+                  <button
+                    onClick={() => handleEditAppointment(appointment)}
+                    className="text-blue-500 hover:underline mr-2"
+                  >
+                    <FontAwesomeIcon icon={faEdit} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteAppointment(appointment._id)}
+                    className="text-red-500 hover:underline"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" className="text-center text-gray-500 p-4">
+                No appointments found.
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
