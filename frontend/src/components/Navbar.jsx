@@ -17,6 +17,8 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { logo } from "../assets";
 
+const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
+
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
@@ -72,13 +74,11 @@ function Navbar() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:3000/auth/register', formData);
+      const response = await axios.post(`${BASE_URL}/auth/register`, formData);
 
       const userId = response.data.user._id; //
-      //  Extract user ID
       const userRole = formData.role;
 
-      // Optionally, store the user ID in localStorage or state
       localStorage.setItem('userId', userId);
       localStorage.setItem('role', userRole);
 
@@ -96,12 +96,11 @@ function Navbar() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:3000/auth/login', {
+      const response = await axios.post(`${BASE_URL}/auth/login`, {
         email: loginMethod === 'email' ? formData.email : '',
         mobile_no: loginMethod === 'mobile' ? formData.mobile_no : '',
       });
-      
-      
+
       toast.success(response.data.message);
       setIsOtpSent(true);
       setIsLoading(false);
@@ -115,37 +114,31 @@ function Navbar() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:3000/auth/verify-otp', {
+      const response = await axios.post(`${BASE_URL}/auth/verify-otp`, {
         email: loginMethod === 'email' ? formData.email : '',
         mobile_no: loginMethod === 'mobile' ? formData.mobile_no : '',
         otp,
       });
-      
-      
-      const { token} = response.data;
-      const role = response.data.user.role; // Extract user role from the response
-      const userId = response.data.user._id; // Extract user ID from the response
-      const fullName = response.data.user.fullName; // Extract full name from the response
-      const email = response.data.user.email; // Extract email from the response
-      const mobile_no = response.data.user.mobile_no; // Extract mobile number from the response
-     
-      
 
-      // Store token and role in localStorage
+      const { token } = response.data;
+      const role = response.data.user.role;
+      const userId = response.data.user._id;
+      const fullName = response.data.user.fullName;
+      const email = response.data.user.email;
+      const mobile_no = response.data.user.mobile_no;
+
       localStorage.setItem('token', token);
       localStorage.setItem('role', role);
       localStorage.setItem('userId', userId);
-      localStorage.setItem('fullName', fullName); // Store full name in localStorage
-      localStorage.setItem('email', email); // Store email in localStorage
-      localStorage.setItem('mobile_no', mobile_no); // Store mobile number in localStorage
-       // Store user ID in localStorage
+      localStorage.setItem('fullName', fullName);
+      localStorage.setItem('email', email);
+      localStorage.setItem('mobile_no', mobile_no);
+
       toast.success(response.data.message);
       setOtp('');
-      localStorage.setItem('token', response.data.token);
       closePopup();
       setIsLoggedIn(true);
 
-      // Redirect based on role
       if (role === 'Admin') {
         navigate('/admin-dashboard');
       } else if (role === 'Doctor') {
@@ -164,21 +157,20 @@ function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    localStorage.removeItem('userId'); // Remove user ID from localStorage  
+    localStorage.removeItem('userId');
     setIsLoggedIn(false);
     toast.success('Logged out successfully');
   };
 
   const handleLinkClick = (link) => {
     setActiveLink(link);
-    setIsOpen(false); // Close the menu on small devices
+    setIsOpen(false);
   };
 
   const handleBookAppointment = () => {
     const token = localStorage.getItem('token');
     if (!token) {
       toast.error('You must be logged in to book an appointment.');
-      console.log("You must be logged in to book an appointment.");
       return;
     }
     navigate('/book-appointment');
@@ -190,7 +182,7 @@ function Navbar() {
       <nav className="p-3 relative" style={{ backgroundColor: '#4597B5' }}>
         <div className="container mx-auto flex flex-wrap items-center justify-between">
           <div className="flex items-center space-x-1">
-            <img src={logo} alt="Docucare Logo" className="h-13 w-13" /> {/* Logo */}
+            <img src={logo} alt="Docucare Logo" className="h-13 w-13" />
             <Link to="/" className="text-white text-2xl font-bold">
               DocuCare
             </Link>
