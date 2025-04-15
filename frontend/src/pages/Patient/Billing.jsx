@@ -1,71 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 
 function Billing() {
-  const [bills, setBills] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // Static data for bills
+  const [bills] = useState([
+    { invoiceId: 'INV001', date: '2025-04-01', amount: 500, status: 'Paid' },
+    { invoiceId: 'INV002', date: '2025-04-05', amount: 300, status: 'Unpaid' },
+    { invoiceId: 'INV003', date: '2025-04-10', amount: 700, status: 'Paid' },
+    { invoiceId: 'INV004', date: '2025-04-15', amount: 450, status: 'Unpaid' },
+  ]);
 
-  // Fetch bills from the API
-  useEffect(() => {
-    const fetchBills = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          toast.error('Token is missing. Please log in again.');
-          return;
-        }
-
-        const response = await axios.get('http://localhost:3000/patient/bills', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setBills(response.data);
-        toast.success('Bills fetched successfully!');
-      } catch (error) {
-        console.error('Error fetching bills:', error.response?.data || error.message);
-        toast.error('Failed to fetch bills.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBills();
-  }, []);
-
-  // Handle invoice download
-  const handleDownloadInvoice = async (invoiceId) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Token is missing. Please log in again.');
-        return;
-      }
-
-      const response = await axios.get(`http://localhost:3000/patient/bills/${invoiceId}/download`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        responseType: 'blob', // Important for file downloads
-      });
-
-      // Create a link to download the file
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `invoice-${invoiceId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      toast.success('Invoice downloaded successfully!');
-    } catch (error) {
-      console.error('Error downloading invoice:', error.response?.data || error.message);
-      toast.error('Failed to download invoice.');
-    }
+  // Handle invoice download (mock functionality)
+  const handleDownloadInvoice = (invoiceId) => {
+    toast.success(`Invoice ${invoiceId} downloaded successfully!`);
   };
 
   return (
@@ -73,9 +20,7 @@ function Billing() {
       <Toaster />
       <h1 className="text-2xl font-bold text-[#2C698D] mb-4">Billing</h1>
 
-      {isLoading ? (
-        <div className="text-center text-gray-500">Loading bills...</div>
-      ) : bills.length > 0 ? (
+      {bills.length > 0 ? (
         <table className="w-full border-collapse border border-gray-300">
           <thead>
             <tr className="bg-gray-100">
@@ -88,7 +33,7 @@ function Billing() {
           </thead>
           <tbody>
             {bills.map((bill) => (
-              <tr key={bill.id}>
+              <tr key={bill.invoiceId}>
                 <td className="border border-gray-300 p-2">{bill.invoiceId}</td>
                 <td className="border border-gray-300 p-2">{bill.date}</td>
                 <td className="border border-gray-300 p-2">${bill.amount}</td>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 
 function Reports() {
-  const [reports, setReports] = useState([
+  // Static data for reports
+  const [reports] = useState([
     { id: 1, title: 'Monthly Revenue', date: '2025-04-01', type: 'Finance' },
     { id: 2, title: 'Patient Statistics', date: '2025-04-05', type: 'Patient' },
     { id: 3, title: 'Doctor Performance', date: '2025-04-10', type: 'Doctor' },
@@ -10,6 +11,7 @@ function Reports() {
   const [filter, setFilter] = useState('');
   const [filteredReports, setFilteredReports] = useState(reports);
 
+  // Handle filter input changes
   const handleFilterChange = (e) => {
     const value = e.target.value;
     setFilter(value);

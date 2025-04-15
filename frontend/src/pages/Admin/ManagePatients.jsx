@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faEdit, faTrash, faUser } from '@fortawesome/free-solid-svg-icons';
 import toast, { Toaster } from 'react-hot-toast';
 
-const BASE_URL = 'https://docucare-2jro.onrender.com'; // Define the base URL as a variable
+const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
 
 function ManagePatients() {
   const [patients, setPatients] = useState([]);
@@ -85,7 +85,10 @@ function ManagePatients() {
 
   // Add a new patient
   const handleAddPatient = async () => {
+    const userId = localStorage.getItem('userId'); // Retrieve userId from localStorage
+  
     if (
+      !userId || // Ensure userId is provided
       !newPatient.fullName ||
       !newPatient.email ||
       !newPatient.age ||
@@ -98,12 +101,15 @@ function ManagePatients() {
       !newPatient.gender ||
       !newPatient.profilePicture
     ) {
-      toast.error('Please fill in all fields and upload an image.');
+      toast.error('Please fill in all fields, upload an image, and ensure user is logged in.');
       return;
     }
-
+  
     try {
-      const response = await axiosInstance.post('/patients/create', newPatient);
+      const response = await axiosInstance.post('/patients/create', {
+        ...newPatient,
+        user: userId, // Add userId to the payload
+      });
       setPatients((prev) => [...prev, response.data.patient]);
       resetForm();
       toast.success('Patient added successfully!');

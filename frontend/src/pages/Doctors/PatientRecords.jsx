@@ -1,61 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 
-const BASE_URL = 'https://docucare-2jro.onrender.com'; // Define the base URL as a variable
-
 function PatientRecords() {
-  const [patients, setPatients] = useState([]);
+  // Static data for patients
+  const [patients] = useState([
+    {
+      _id: 'P001',
+      name: 'John Doe',
+      age: 30,
+      contact: '123-456-7890',
+      address: '123 Main St, Springfield',
+      medicalHistory: 'Diabetes, Hypertension',
+    },
+    {
+      _id: 'P002',
+      name: 'Jane Smith',
+      age: 25,
+      contact: '987-654-3210',
+      address: '456 Elm St, Shelbyville',
+      medicalHistory: 'Asthma',
+    },
+    {
+      _id: 'P003',
+      name: 'Alice Johnson',
+      age: 40,
+      contact: '555-123-4567',
+      address: '789 Oak St, Capital City',
+      medicalHistory: 'None',
+    },
+  ]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredPatients, setFilteredPatients] = useState([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    contact: '',
-    address: '',
-    medicalHistory: '',
-  });
-  const [editingPatient, setEditingPatient] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Fetch patient records from the API
-  useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          toast.error('Token is missing. Please log in again.');
-          return;
-        }
-
-        // Fetch patient records from the API
-        const response = await axios.get(`${BASE_URL}/doctors/patientrecords`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        console.log('Fetched patients:', response.data); // Log the fetched data for debugging
-
-        // Update state with fetched data
-        setPatients(response.data);
-        setFilteredPatients(response.data);
-      } catch (error) {
-        console.error('Error fetching patient records:', error.response?.data || error.message);
-        toast.error('Failed to fetch patient records.');
-      }
-    };
-
-    fetchPatients();
-  }, []);
+  const [filteredPatients, setFilteredPatients] = useState(patients);
 
   // Handle search input change
   const handleSearchChange = (e) => {
     const query = e.target.value.toLowerCase();
     setSearchQuery(query);
     setFilteredPatients(
-      patients.filter((patient) =>
-        patient.name.toLowerCase().includes(query) ||
-        patient.contact.toLowerCase().includes(query)
+      patients.filter(
+        (patient) =>
+          patient.name.toLowerCase().includes(query) ||
+          patient.contact.toLowerCase().includes(query)
       )
     );
   };

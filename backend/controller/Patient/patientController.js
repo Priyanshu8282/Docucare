@@ -80,31 +80,44 @@ export const createOrUpdatePatient = async (req, res) => {
 
 export const createPatient = async (req, res) => {
   try {
-    const { fullName, email, mobile_no, age, gender, bloodGroup, allergies, address, profilePicture } = req.body;
+    const { user, fullName, email, mobile_no, age, gender, bloodGroup, allergies, address, profilePicture } = req.body;
 
     // Validate required fields
-    if (!fullName || !email || !mobile_no || !age || !gender || !bloodGroup) {
-      return res.status(400).json({ message: "All required fields must be provided." });
+    if (!user || !fullName || !email || !mobile_no || !age || !gender || !bloodGroup) {
+      return res.status(400).json({ message: "All required fields, including user, must be provided." });
     }
 
     // Validate enum fields
     if (!GENDER_ENUM.includes(gender)) {
-      return res.status(400).json({ message: "Invalid gender value." });
+      return res.status(400).json({ message: `Invalid gender value. Allowed values are: ${GENDER_ENUM.join(", ")}.` });
     }
     if (!BLOOD_GROUP_ENUM.includes(bloodGroup)) {
-      return res.status(400).json({ message: "Invalid blood group value." });
+      return res.status(400).json({ message: `Invalid blood group value. Allowed values are: ${BLOOD_GROUP_ENUM.join(", ")}.` });
+    }
+
+    // Validate user existence
+    const existingUser = await User.findById(user);
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found. Please create a user first." });
+    }
+
+    // Check if a patient with the same email or mobile number already exists
+    const existingPatient = await Patient.findOne({ $or: [{ email }, { mobile_no }] });
+    if (existingPatient) {
+      return res.status(409).json({ message: "A patient with the same email or mobile number already exists." });
     }
 
     // Prepare patient data
     const patientData = {
+      user, // Add user field
       fullName,
       email,
       mobile_no,
       age,
       gender,
       bloodGroup,
-      profilePicture, // Profile picture is now taken from req.body
-      allergies,
+      profilePicture: profilePicture || null, // Ensure profilePicture is optional
+      allergies: allergies || [], // Default to an empty array if not provided
       address: {
         street: address?.street || '',
         city: address?.city || '',
@@ -123,6 +136,13 @@ export const createPatient = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating patient:", error);
+
+    // Handle duplicate key error (e.g., unique constraint violation)
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(409).json({ message: `Duplicate value for field: ${field}.` });
+    }
+
     res.status(500).json({ message: "Error creating patient.", error });
   }
 };
@@ -144,7 +164,9 @@ export const getAllPatients = async (req, res) => {
 export const getPatientNames = async (req, res) => {
   try {
     // Fetch only the 'fullName' field of all patients
-    const patientNames = await Patient.find().select('patientName');
+    const patientNames = await Patient.find().select('fullName');
+   
+    
 
     res.status(200).json(patientNames);
   } catch (error) {

@@ -1,47 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 
 function Reports() {
-  const [reports, setReports] = useState([]);
+  // Static data for reports
+  const [reports] = useState([
+    { id: 1, title: 'Monthly Revenue', date: '2025-04-01', type: 'Finance' },
+    { id: 2, title: 'Patient Statistics', date: '2025-04-05', type: 'Patient' },
+    { id: 3, title: 'Doctor Performance', date: '2025-04-10', type: 'Doctor' },
+    { id: 4, title: 'Appointment Trends', date: '2025-04-15', type: 'Appointment' },
+  ]);
   const [filter, setFilter] = useState('');
-  const [filteredReports, setFilteredReports] = useState([]);
-
-  // Fetch reports from the API
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          toast.error('Token is missing. Please log in again.');
-          return;
-        }
-
-        const response = await axios.get('http://localhost:3000/doctor/reports', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setReports(response.data);
-        setFilteredReports(response.data);
-        toast.success('Reports fetched successfully!');
-      } catch (error) {
-        console.error('Error fetching reports:', error.response?.data || error.message);
-        toast.error('Failed to fetch reports.');
-      }
-    };
-
-    fetchReports();
-  }, []);
+  const [filteredReports, setFilteredReports] = useState(reports);
 
   // Handle filter input change
   const handleFilterChange = (e) => {
     const query = e.target.value.toLowerCase();
     setFilter(query);
     setFilteredReports(
-      reports.filter((report) =>
-        report.title.toLowerCase().includes(query) || report.type.toLowerCase().includes(query)
+      reports.filter(
+        (report) =>
+          report.title.toLowerCase().includes(query) ||
+          report.type.toLowerCase().includes(query)
       )
     );
   };

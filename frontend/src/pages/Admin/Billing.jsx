@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
-const BASE_URL = 'https://docucare-2jro.onrender.com'; // Define the base URL as a variable
-
 function Billing() {
-  const [billingReports, setBillingReports] = useState([]);
+  const [billingReports, setBillingReports] = useState([
+    { id: 'BR001', date: '2025-04-01', amount: 500, status: 'Paid' },
+    { id: 'BR002', date: '2025-04-05', amount: 300, status: 'Unpaid' },
+  ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(800); // Static total revenue
   const [formData, setFormData] = useState({
     patient: '',
     doctor: '',
@@ -15,72 +15,14 @@ function Billing() {
     totalAmount: 0,
     status: 'Unpaid',
   });
-  const [patients, setPatients] = useState([]);
-  const [doctors, setDoctors] = useState([]);
-
-  // Fetch doctors
-  const fetchDoctors = async () => {
-    try {
-      const response = await axios.get(`${BASE_URL}/doctors/names`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`, // Include token for authentication
-        },
-      });
-      setDoctors(response.data || []); // Set the fetched doctor names
-    } catch (error) {
-      console.error('Error fetching doctor names:', error.response?.data || error.message);
-      toast.error('Failed to fetch doctor names.');
-    }
-  };
-
-  // Fetch patients
-  const fetchPatients = async () => {
-    try {
-      const response = await axios.get(`${BASE_URL}/patients/names`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`, // Include token for authentication
-        },
-      });
-      setPatients(response.data || []); // Set the fetched patient names
-    } catch (error) {
-      console.error('Error fetching patient names:', error.response?.data || error.message);
-      toast.error('Failed to fetch patient names.');
-    }
-  };
-
-  // Fetch billing reports, patients, and doctors
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          toast.error('Token is missing. Please log in again.');
-          return;
-        }
-
-        // Fetch billing reports
-        const billingResponse = await axios.get(`${BASE_URL}/generate/billing`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setBillingReports(billingResponse.data.reports);
-        setTotalRevenue(billingResponse.data.totalRevenue);
-
-        // Fetch patients and doctors concurrently
-        await Promise.all([fetchPatients(), fetchDoctors()]);
-        toast.success('Data fetched successfully!');
-      } catch (error) {
-        console.error('Error fetching data:', error.response?.data || error.message);
-        toast.error('Failed to fetch data.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const [patients, setPatients] = useState([
+    { _id: 'P001', fullName: 'John Doe' },
+    { _id: 'P002', fullName: 'Jane Smith' },
+  ]);
+  const [doctors, setDoctors] = useState([
+    { _id: 'D001', name: 'Dr. Alice' },
+    { _id: 'D002', name: 'Dr. Bob' },
+  ]);
 
   // Handle form input changes
   const handleInputChange = (e, index = null) => {
@@ -109,38 +51,23 @@ function Billing() {
   }, [formData.services]);
 
   // Handle form submission to create a new billing record
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Token is missing. Please log in again.');
-        return;
-      }
-
-      const response = await axios.post(
-        `${BASE_URL}/generate/billing`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      setBillingReports([...billingReports, response.data.billing]);
-      toast.success('Billing record created successfully!');
-      setFormData({
-        patient: '',
-        doctor: '',
-        services: [{ description: '', amount: 0 }],
-        totalAmount: 0,
-        status: 'Unpaid',
-      });
-    } catch (error) {
-      console.error('Error creating billing record:', error.response?.data || error.message);
-      toast.error('Failed to create billing record.');
-    }
+    const newBillingReport = {
+      id: `BR${billingReports.length + 1}`,
+      date: new Date().toISOString().split('T')[0],
+      amount: formData.totalAmount,
+      status: formData.status,
+    };
+    setBillingReports([...billingReports, newBillingReport]);
+    toast.success('Billing record created successfully!');
+    setFormData({
+      patient: '',
+      doctor: '',
+      services: [{ description: '', amount: 0 }],
+      totalAmount: 0,
+      status: 'Unpaid',
+    });
   };
 
   return (
