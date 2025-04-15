@@ -17,7 +17,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { logo } from "../assets";
 
-const BASE_URL = 'http://localhost:3000'; // Define the base URL as a variable
+const BASE_URL = 'https://docucare-2jro.onrender.com'; // Define the base URL as a variable
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
