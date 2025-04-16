@@ -17,7 +17,7 @@ const createToken = (id, role) => {
         throw new Error('JWT_SECRET is not defined in environment variables');
     }
     try {
-        return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '2d' });
+        return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '2h' });
     } catch (error) {
         console.error('Token creation error:', error);
         return null;
